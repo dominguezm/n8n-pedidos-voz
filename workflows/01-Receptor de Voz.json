@@ -27,7 +27,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "Eres el asistente de cocina de un restaurante. Escucha el siguiente audio del mesero y extrae nombre del cliente, nombre del plato, cantidades, tipo de pedido (menu o segundo o extra) y sus detalles. Devuelve el resultado ESTRICTAMENTE en formato JSON",
+        "text": "Eres el asistente de recepción de pedidos de un restaurante. Tu tarea es escuchar el audio proporcionado por el mesero y extraer la información exacta del pedido.\n\nDebes analizar la solicitud y estructurar la información siguiendo ESTRICTAMENTE el siguiente esquema JSON. No agregues texto adicional, saludos, ni bloques de código markdown (```json), devuelve ÚNICAMENTE el objeto JSON en texto plano.\n\nReglas de extracción:\n\n\"cliente\": Nombre del cliente si se menciona. Si no, usa \"Mesa/Cliente Desconocido\".\n\n\"pedidos\": Es una lista (array) ya que un cliente puede pedir varios platos.\n\n\"hora_entrega\": Si el mesero no menciona una hora específica, pon \"inmediata\".\n\n\"pago_por_adelantado\": Si no se menciona que ya pagó, pon false (booleano).\n\n\"tipo_pedido\": Clasifícalo estrictamente como \"menu\", \"segundo\" o \"extra\".\n\nEsquema JSON esperado:\n{\n\"cliente\": \"Nombre\",\n\"pedidos\": [\n{\n\"plato\": \"Nombre del plato\",\n\"cantidad\": 1,\n\"tipo_pedido\": \"menu\",\n\"detalles\": \"sin cebolla, con harto aji\"\n}\n],\n\"hora_entrega\": \"inmediata\",\n\"pago_por_adelantado\": false\n}",
         "inputType": "binary",
         "binaryPropertyName": "audio",
         "options": {
@@ -37,11 +37,12 @@
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.2,
       "position": [
-        320,
-        -16
+        256,
+        -80
       ],
       "id": "851dc4a7-4dc4-46a9-b674-7adeb393f5eb",
       "name": "Analyze audio",
+      "notesInFlow": false,
       "credentials": {
         "googlePalmApi": {
           "id": "2HSvSGLyck4gIAX7",
@@ -69,7 +70,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "719527f0-1bbc-4354-ad93-44d1b312224b",
+  "versionId": "33b98f45-d118-4959-83f0-5b51844e5e14",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
