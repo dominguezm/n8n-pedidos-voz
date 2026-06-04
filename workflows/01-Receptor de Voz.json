@@ -16,17 +16,62 @@
       "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
       "name": "Webhook",
       "webhookId": "507e1847-7db3-468f-a7f8-b2108017a2b9"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.1-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.1-flash-lite"
+        },
+        "text": "Eres el asistente de cocina de un restaurante. Escucha el siguiente audio del mesero y extrae nombre del cliente, nombre del plato, cantidades, tipo de pedido (menu o segundo o extra) y sus detalles. Devuelve el resultado ESTRICTAMENTE en formato JSON",
+        "inputType": "binary",
+        "binaryPropertyName": "audio",
+        "options": {
+          "maxOutputTokens": 400
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        -16
+      ],
+      "id": "851dc4a7-4dc4-46a9-b674-7adeb393f5eb",
+      "name": "Analyze audio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2HSvSGLyck4gIAX7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
     }
   ],
   "pinData": {},
-  "connections": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Analyze audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "60cbba7c-0d9b-48e4-84ae-69b3988f28cf",
+  "versionId": "719527f0-1bbc-4354-ad93-44d1b312224b",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
   },
   "id": "RYppBOSF6Fh1BWzG",
