@@ -1,6 +1,23 @@
 {
   "name": "01-Receptor de Voz",
-  "nodes": [],
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "recibir-audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
+      "name": "Webhook",
+      "webhookId": "507e1847-7db3-468f-a7f8-b2108017a2b9"
+    }
+  ],
   "pinData": {},
   "connections": {},
   "active": false,
@@ -8,7 +25,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "d59f578d-2066-4408-bcf6-2afc06ebc8e7",
+  "versionId": "60cbba7c-0d9b-48e4-84ae-69b3988f28cf",
   "meta": {
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
   },
