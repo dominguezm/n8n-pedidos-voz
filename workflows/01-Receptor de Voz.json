@@ -1,0 +1,17 @@
+{
+  "name": "01-Receptor de Voz",
+  "nodes": [],
+  "pinData": {},
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d59f578d-2066-4408-bcf6-2afc06ebc8e7",
+  "meta": {
+    "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
+  },
+  "id": "RYppBOSF6Fh1BWzG",
+  "tags": []
+}
