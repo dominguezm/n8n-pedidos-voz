@@ -79,6 +79,115 @@
       ],
       "id": "e2411a39-dc7d-43aa-9e56-ed6716fa9067",
       "name": "Set_pedidos"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pedido_voz",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cliente",
+              "displayName": "cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "plato",
+              "displayName": "plato",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cantidad",
+              "displayName": "cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo_pedido",
+              "displayName": "tipo_pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "detalles",
+              "displayName": "detalles",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "hora_entrega",
+              "displayName": "hora_entrega",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pago_por_adelantado",
+              "displayName": "pago_por_adelantado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        944,
+        0
+      ],
+      "id": "b898df22-b06f-413e-a966-86fe4cf4db0b",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -107,7 +216,13 @@
     },
     "Split Out": {
       "main": [
-        []
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Set_pedidos": {
@@ -127,7 +242,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "cf20981c-4811-4b23-899e-16f92e3f5d04",
+  "versionId": "9aa04c3d-dabf-40ab-84cf-150c060a25cf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
