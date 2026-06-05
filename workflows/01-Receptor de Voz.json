@@ -27,28 +27,58 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "Eres el asistente de recepción de pedidos de un restaurante. Tu tarea es escuchar el audio proporcionado por el mesero y extraer la información exacta del pedido.\n\nDebes analizar la solicitud y estructurar la información siguiendo ESTRICTAMENTE el siguiente esquema JSON. No agregues texto adicional, saludos, ni bloques de código markdown (```json), devuelve ÚNICAMENTE el objeto JSON en texto plano.\n\nReglas de extracción:\n\n\"cliente\": Nombre del cliente si se menciona. Si no, usa \"Mesa/Cliente Desconocido\".\n\n\"pedidos\": Es una lista (array) ya que un cliente puede pedir varios platos.\n\n\"hora_entrega\": Si el mesero no menciona una hora específica, pon \"inmediata\".\n\n\"pago_por_adelantado\": Si no se menciona que ya pagó, pon false (booleano).\n\n\"tipo_pedido\": Clasifícalo estrictamente como \"menu\", \"segundo\" o \"extra\".\n\nEsquema JSON esperado:\n{\n\"cliente\": \"Nombre\",\n\"pedidos\": [\n{\n\"plato\": \"Nombre del plato\",\n\"cantidad\": 1,\n\"tipo_pedido\": \"menu\",\n\"detalles\": \"sin cebolla, con harto aji\"\n}\n],\n\"hora_entrega\": \"inmediata\",\n\"pago_por_adelantado\": false\n}",
+        "text": "Eres el asistente de recepción de pedidos de un restaurante. Tu tarea es escuchar el audio proporcionado por el mesero y extraer la información exacta del pedido.\n\nDebes analizar la solicitud y estructurar la información siguiendo ESTRICTAMENTE el siguiente esquema JSON. No agregues texto adicional, saludos, ni bloques de código markdown (```json), devuelve ÚNICAMENTE el objeto JSON en texto plano.\n\nReglas de extracción:\n\n\"cliente\": Nombre del cliente si se menciona. Si no, usa \"Mesa/Cliente Desconocido\", si pide más de un plato repetir el nombre.\n\n\"pedidos\": Es una lista (array) ya que un cliente puede pedir varios platos.\n\n\"hora_entrega\": Si el mesero no menciona una hora específica, pon \"inmediata\".\n\n\"pago_por_adelantado\": Si no se menciona que ya pagó, pon false (booleano).\n\n\"tipo_pedido\": Clasifícalo estrictamente como \"menu\", \"segundo\" o \"extra\".\n\nEsquema JSON esperado:\n{\n\"pedidos\": [\n{\n\"cliente\": \"Nombre\",\n\"plato\": \"Nombre del plato\",\n\"cantidad\": 1,\n\"tipo_pedido\": \"menu\",\n\"detalles\": \"sin cebolla, con harto aji\",\n\"hora_entrega\": \"inmediata\",\n\"pago_por_adelantado\": false\n]}\n}",
         "inputType": "binary",
         "binaryPropertyName": "audio",
-        "options": {
-          "maxOutputTokens": 400
-        }
+        "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.2,
       "position": [
-        256,
-        -80
+        272,
+        0
       ],
       "id": "851dc4a7-4dc4-46a9-b674-7adeb393f5eb",
       "name": "Analyze audio",
       "notesInFlow": false,
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false,
       "credentials": {
         "googlePalmApi": {
           "id": "2HSvSGLyck4gIAX7",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "pedidos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        736,
+        0
+      ],
+      "id": "dd4d9635-8682-45f9-848d-15f53e4de881",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "=\n {{ $json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        0
+      ],
+      "id": "e2411a39-dc7d-43aa-9e56-ed6716fa9067",
+      "name": "Set_pedidos"
     }
   ],
   "pinData": {},
@@ -63,6 +93,33 @@
           }
         ]
       ]
+    },
+    "Analyze audio": {
+      "main": [
+        [
+          {
+            "node": "Set_pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        []
+      ]
+    },
+    "Set_pedidos": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -70,7 +127,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "33b98f45-d118-4959-83f0-5b51844e5e14",
+  "versionId": "cf20981c-4811-4b23-899e-16f92e3f5d04",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
