@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "recibir-audio",
+        "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
@@ -27,7 +28,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "Eres el asistente de recepción de pedidos de un restaurante. Tu tarea es escuchar el audio proporcionado por el mesero y extraer la información exacta del pedido.\n\nDebes analizar la solicitud y estructurar la información siguiendo ESTRICTAMENTE el siguiente esquema JSON. No agregues texto adicional, saludos, ni bloques de código markdown (```json), devuelve ÚNICAMENTE el objeto JSON en texto plano.\n\nReglas de extracción:\n\n\"cliente\": Nombre del cliente si se menciona. Si no, usa \"Mesa/Cliente Desconocido\", si pide más de un plato repetir el nombre.\n\n\"pedidos\": Es una lista (array) ya que un cliente puede pedir varios platos.\n\n\"hora_entrega\": Si el mesero no menciona una hora específica, pon \"inmediata\".\n\n\"pago_por_adelantado\": Si no se menciona que ya pagó, pon false (booleano).\n\n\"tipo_pedido\": Clasifícalo estrictamente como \"menu\", \"segundo\" o \"extra\".\n\nEsquema JSON esperado:\n{\n\"pedidos\": [\n{\n\"cliente\": \"Nombre\",\n\"plato\": \"Nombre del plato\",\n\"cantidad\": 1,\n\"tipo_pedido\": \"menu\",\n\"detalles\": \"sin cebolla, con harto aji\",\n\"hora_entrega\": \"inmediata\",\n\"pago_por_adelantado\": false\n]}\n}",
+        "text": "Eres el asistente de recepción de pedidos de un restaurante. Tu tarea es escuchar el audio proporcionado por el mesero y extraer la información exacta del pedido.\n\nDebes analizar la solicitud y estructurar la información siguiendo ESTRICTAMENTE el siguiente esquema JSON. No agregues texto adicional, saludos, ni bloques de código markdown (```json), devuelve ÚNICAMENTE el objeto JSON en texto plano.\n\nReglas de extracción:\n\n\"cliente\": Nombre del cliente si se menciona. Si no, usa \"Mesa/Cliente Desconocido\".\n\n\"pedidos\": Es una lista (array) ya que un cliente puede pedir varios platos.\n\n\"hora_entrega\": Si el mesero no menciona una hora específica, pon \"inmediata\".\n\n\"pago_por_adelantado\": Si no se menciona que ya pagó, pon false (booleano).\n\n\"tipo_pedido\": Clasifícalo estrictamente como \"menu\", \"segundo\" o \"extra\".\n\nEsquema JSON esperado:\n{\n\"cliente\": \"Nombre\",\n\"pedidos\": [\n{\n\"plato\": \"Nombre del plato\",\n\"cantidad\": 1,\n\"tipo_pedido\": \"menu\",\n\"detalles\": \"sin cebolla, con harto aji\"\n}\n],\n\"hora_entrega\": \"inmediata\",\n\"pago_por_adelantado\": false\n}",
         "inputType": "binary",
         "binaryPropertyName": "audio",
         "options": {}
@@ -54,31 +55,18 @@
     {
       "parameters": {
         "fieldToSplitOut": "pedidos",
+        "include": "allOtherFields",
         "options": {}
       },
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        736,
+        720,
         0
       ],
       "id": "dd4d9635-8682-45f9-848d-15f53e4de881",
-      "name": "Split Out"
-    },
-    {
-      "parameters": {
-        "mode": "raw",
-        "jsonOutput": "=\n {{ $json.content.parts[0].text }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        496,
-        0
-      ],
-      "id": "e2411a39-dc7d-43aa-9e56-ed6716fa9067",
-      "name": "Set_pedidos"
+      "name": "Split Out",
+      "notesInFlow": false
     },
     {
       "parameters": {
@@ -177,7 +165,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        944,
+        1104,
         0
       ],
       "id": "b898df22-b06f-413e-a966-86fe4cf4db0b",
@@ -198,11 +186,85 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1152,
+        1328,
         0
       ],
       "id": "bcfcc519-69e0-4c16-a35d-b2a4271265de",
       "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "=\n {{ $json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        0
+      ],
+      "id": "e2411a39-dc7d-43aa-9e56-ed6716fa9067",
+      "name": "json_nuevoPedidos"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "af8c0150-edcc-4b7e-adda-e35f4a8b454e",
+              "name": "cliente",
+              "value": "={{ $json.cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "ba0d115e-d943-43fa-997f-1f41d5f1f5d9",
+              "name": "plato",
+              "value": "={{ $json.pedidos.plato }}",
+              "type": "string"
+            },
+            {
+              "id": "a94383f2-bfbc-420c-bb47-e9222bd8ddeb",
+              "name": "cantidad",
+              "value": "={{ $json.pedidos.cantidad }}",
+              "type": "number"
+            },
+            {
+              "id": "f92b1fa8-beb9-4f03-9913-4b1843a1d820",
+              "name": "tipo_pedido",
+              "value": "={{ $json.pedidos.tipo_pedido }}",
+              "type": "string"
+            },
+            {
+              "id": "ea3f240c-0ae2-4230-99f0-8940f4c2f576",
+              "name": "detalles",
+              "value": "={{ $json.pedidos.detalles }}",
+              "type": "string"
+            },
+            {
+              "id": "cf26da3d-297c-4831-a9c2-d37d0c98885c",
+              "name": "hora_entrega",
+              "value": "={{ $json.hora_entrega }}",
+              "type": "string"
+            },
+            {
+              "id": "8ae07161-53d3-4252-99db-9c24837bfd98",
+              "name": "pago_por_adelantado",
+              "value": "={{ $json.pago_por_adelantado }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        0
+      ],
+      "id": "81e4f125-b28a-4b51-903b-9325b406f2aa",
+      "name": "plano_nuevoPedidos"
     }
   ],
   "pinData": {},
@@ -222,7 +284,7 @@
       "main": [
         [
           {
-            "node": "Set_pedidos",
+            "node": "json_nuevoPedidos",
             "type": "main",
             "index": 0
           }
@@ -233,18 +295,7 @@
       "main": [
         [
           {
-            "node": "Append row in sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set_pedidos": {
-      "main": [
-        [
-          {
-            "node": "Split Out",
+            "node": "plano_nuevoPedidos",
             "type": "main",
             "index": 0
           }
@@ -261,6 +312,28 @@
           }
         ]
       ]
+    },
+    "json_nuevoPedidos": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plano_nuevoPedidos": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -268,7 +341,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "0818e095-75a2-4ecf-bfcc-bfce026415c7",
+  "versionId": "0d0b77db-1313-419c-9c98-abde5c56cff4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
