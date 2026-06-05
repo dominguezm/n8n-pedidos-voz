@@ -11,8 +11,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -48,
+        64
       ],
       "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
       "name": "Webhook",
@@ -36,8 +36,8 @@
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.2,
       "position": [
-        272,
-        0
+        192,
+        64
       ],
       "id": "851dc4a7-4dc4-46a9-b674-7adeb393f5eb",
       "name": "Analyze audio",
@@ -61,8 +61,8 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        720,
-        0
+        640,
+        64
       ],
       "id": "dd4d9635-8682-45f9-848d-15f53e4de881",
       "name": "Split Out",
@@ -165,8 +165,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1104,
-        0
+        1040,
+        64
       ],
       "id": "b898df22-b06f-413e-a966-86fe4cf4db0b",
       "name": "Append row in sheet",
@@ -179,15 +179,14 @@
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "{\n  \"estado\": \"exito\",\n  \"mensaje\": \"Pedido registrado correctamente en la base de datos\"\n}",
+        "respondWith": "binary",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1328,
-        0
+        1040,
+        256
       ],
       "id": "bcfcc519-69e0-4c16-a35d-b2a4271265de",
       "name": "Respond to Webhook"
@@ -201,8 +200,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        496,
-        0
+        416,
+        64
       ],
       "id": "e2411a39-dc7d-43aa-9e56-ed6716fa9067",
       "name": "json_nuevoPedidos"
@@ -260,11 +259,49 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        912,
-        0
+        848,
+        64
       ],
       "id": "81e4f125-b28a-4b51-903b-9325b406f2aa",
       "name": "plano_nuevoPedidos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtenemos los datos del nodo anterior (Gemini)\nconst cliente = $input.item.json.cliente;\nconst pedidos = $input.item.json.pedidos;\n\n// Armamos la lista de platos con sus cantidades\nconst listaPlatos = pedidos.map(item => `${item.cantidad} ${item.tipo_pedido} ${item.plato}`).join(', y ');\n\n// Creamos la frase final\nconst textoParaHablar = `Pedido recibido para ${cliente}. Anotando: ${listaPlatos}.`;\n\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        256
+      ],
+      "id": "76e30fb1-e1cb-42ea-ae5f-b1e37b6ba62b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8880/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"input\": \"{{ $json.guion }}\",  \"voice\": \"em_alex\"} ",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        256
+      ],
+      "id": "c0bfee01-7d2e-4583-bdea-a17282dcd9e9",
+      "name": "HTTP Request"
     }
   ],
   "pinData": {},
@@ -304,13 +341,7 @@
     },
     "Append row in sheet": {
       "main": [
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "json_nuevoPedidos": {
@@ -318,6 +349,11 @@
         [
           {
             "node": "Split Out",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
             "type": "main",
             "index": 0
           }
@@ -334,6 +370,28 @@
           }
         ]
       ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -341,7 +399,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "0d0b77db-1313-419c-9c98-abde5c56cff4",
+  "versionId": "6a38a138-e53a-4d32-8260-5c7cdc5a2939",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
