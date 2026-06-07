@@ -1,0 +1,677 @@
+{
+  "name": "01-Receptor de Voz",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "recibir-audio",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        336,
+        336
+      ],
+      "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
+      "name": "Webhook",
+      "webhookId": "507e1847-7db3-468f-a7f8-b2108017a2b9"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.1-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.1-flash-lite"
+        },
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir si es un pedido totalmente nuevo, o una actualización/modificación a un pedido existente.\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\nReglas de análisis:\n\nSi el audio pide agregar algo que no tiene relación con los pedidos actuales, clasifícalo como \"nuevo\".\n\nSi el audio pide cambiar la cantidad, detalles o cancelar algo de un cliente que ya está en los PEDIDOS ACTUALES, clasifícalo como \"actualizar\".\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\",\n  \"pedidos_nuevos\": [\n  {\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {\n      \"plato\": \"Nombre del plato\",\n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_por_adelantado\": false\n  }],\n  \"actualizacion\": \n  {\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_por_adelantado\": false\n  }\n}",
+        "inputType": "binary",
+        "binaryPropertyName": "=audio",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        336
+      ],
+      "id": "851dc4a7-4dc4-46a9-b674-7adeb393f5eb",
+      "name": "Analyze audio",
+      "notesInFlow": false,
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2HSvSGLyck4gIAX7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "pedidos_nuevos[0].pedidos",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        64
+      ],
+      "id": "dd4d9635-8682-45f9-848d-15f53e4de881",
+      "name": "Split Out",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pedido_voz",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cliente",
+              "displayName": "cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "plato",
+              "displayName": "plato",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cantidad",
+              "displayName": "cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo_pedido",
+              "displayName": "tipo_pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "detalles",
+              "displayName": "detalles",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "hora_entrega",
+              "displayName": "hora_entrega",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pago_por_adelantado",
+              "displayName": "pago_por_adelantado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        64
+      ],
+      "id": "b898df22-b06f-413e-a966-86fe4cf4db0b",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1920,
+        224
+      ],
+      "id": "bcfcc519-69e0-4c16-a35d-b2a4271265de",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "af8c0150-edcc-4b7e-adda-e35f4a8b454e",
+              "name": "cliente",
+              "value": "={{ $json.pedidos_nuevos[0].cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "ba0d115e-d943-43fa-997f-1f41d5f1f5d9",
+              "name": "plato",
+              "value": "={{ $json['pedidos_nuevos[0].pedidos'].plato }}",
+              "type": "string"
+            },
+            {
+              "id": "a94383f2-bfbc-420c-bb47-e9222bd8ddeb",
+              "name": "cantidad",
+              "value": "={{ $json['pedidos_nuevos[0].pedidos'].cantidad }}",
+              "type": "number"
+            },
+            {
+              "id": "f92b1fa8-beb9-4f03-9913-4b1843a1d820",
+              "name": "tipo_pedido",
+              "value": "={{ $json['pedidos_nuevos[0].pedidos'].tipo_pedido }}",
+              "type": "string"
+            },
+            {
+              "id": "ea3f240c-0ae2-4230-99f0-8940f4c2f576",
+              "name": "detalles",
+              "value": "={{ $json['pedidos_nuevos[0].pedidos'].detalles }}",
+              "type": "string"
+            },
+            {
+              "id": "cf26da3d-297c-4831-a9c2-d37d0c98885c",
+              "name": "hora_entrega",
+              "value": "={{ $json.pedidos_nuevos[0].hora_entrega }}",
+              "type": "string"
+            },
+            {
+              "id": "8ae07161-53d3-4252-99db-9c24837bfd98",
+              "name": "pago_por_adelantado",
+              "value": "={{ $json.pedidos_nuevos[0].pago_por_adelantado }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1600,
+        64
+      ],
+      "id": "81e4f125-b28a-4b51-903b-9325b406f2aa",
+      "name": "plano_nuevoPedidos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtenemos los datos del nodo anterior (Gemini)\nconst cliente = $input.first().json.pedidos_nuevos[0].cliente;\nconst pedidos = $input.first().json.pedidos_nuevos[0].pedidos;\n\n// Armamos la lista de platos con sus cantidades\nconst listaPlatos = pedidos.map(item => `${item.cantidad} ${item.tipo_pedido} ${item.plato}`).join(', y ');\n\n// Creamos la frase final\nconst textoParaHablar = `Pedido recibido para ${cliente}. Anotando: ${listaPlatos}.`;\n\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        224
+      ],
+      "id": "76e30fb1-e1cb-42ea-ae5f-b1e37b6ba62b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8880/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"input\": \"{{ $json.guion }}\",  \"voice\": \"em_alex\"} ",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1696,
+        224
+      ],
+      "id": "c0bfee01-7d2e-4583-bdea-a17282dcd9e9",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pedido_voz",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        512,
+        336
+      ],
+      "id": "6a2971ad-77fe-49ea-a3ce-947c880b633e",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet textoPedidos = \"No hay pedidos resgistrados actualemente\";\n\nif (items.length > 0 && items[0].json && Object.keys(items[0].json).length > 0)\n{\ntextoPedidos = items.map(item => `fila: ${item.json.row_number} |  cliente: ${item.json.cliente} | Plato: ${item.json.plato } | cantidad: ${item.json.cantidad} | tipo_pedido: ${item.json.tipo_pedido} | detalles: ${item.json.detalles} | hora_entrega: ${item.json.hora_entrega} | pago_por_adelantado: ${item.json.pago_por_adelantado}`).join('\\n');\n}\n\nconst audioBinario = $(\"Webhook\").first().binary;\n\nreturn [{\n  json: {\n    historial_pedidos: textoPedidos\n  },\n  binary: audioBinario\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        336
+      ],
+      "id": "9a20c553-3481-417d-bf91-862c87227372",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intencion }}",
+                    "rightValue": "nuevo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e5a13596-e3e5-46e4-932c-3dc79265bcd5"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2bcd416f-5093-4ecc-9202-c37af20058ca",
+                    "leftValue": "={{ $json.intencion }}",
+                    "rightValue": "actualizar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1216,
+        336
+      ],
+      "id": "b899e5ee-d972-4cfd-8a04-5a5436b285d1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "=\n {{ $json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        336
+      ],
+      "id": "e2411a39-dc7d-43aa-9e56-ed6716fa9067",
+      "name": "json_pedidos"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pedido_voz",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "plato": "={{ $json.actualizacion.nuevo_plato }}",
+            "row_number": "={{ $json.actualizacion.row_number }}",
+            "cantidad": "={{ $json.actualizacion.nuevo_cantidad }}",
+            "tipo_pedido": "={{ $json.actualizacion.nuevo_tipo_pedido }}",
+            "hora_entrega": "={{ $json.actualizacion.nuevo_hora_entrega }}",
+            "detalles": "={{ $json.actualizacion.nuevo_detalles }}",
+            "pago_por_adelantado": "={{ $json.actualizacion.nuevo_pago_por_adelantado }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "cliente",
+              "displayName": "cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "plato",
+              "displayName": "plato",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cantidad",
+              "displayName": "cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo_pedido",
+              "displayName": "tipo_pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "detalles",
+              "displayName": "detalles",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hora_entrega",
+              "displayName": "hora_entrega",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pago_por_adelantado",
+              "displayName": "pago_por_adelantado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1504,
+        400
+      ],
+      "id": "6555b696-a145-497f-bc89-460ba7bd77df",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze audio": {
+      "main": [
+        [
+          {
+            "node": "json_pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "plano_nuevoPedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "plano_nuevoPedidos": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Analyze audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "json_pedidos": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a5714b8f-5099-417c-b03f-423e98467b32",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
+  },
+  "id": "RYppBOSF6Fh1BWzG",
+  "tags": []
+}
