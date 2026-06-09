@@ -28,7 +28,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir si es un pedido totalmente nuevo, o una actualización/modificación a un pedido existente.\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\nReglas de análisis:\n\nSi el audio pide agregar algo que no tiene relación con los pedidos actuales, clasifícalo como \"nuevo\".\n\nSi el audio pide cambiar cantidades, o detalles,  o cancelar de UNO O MÁS clientes de los PEDIDOS ACTUALES, clasifícalo como \"actualizar\".\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\",\n  \"pedidos_nuevos\": \n  [{\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {\n      \"plato\": \"Nombre del plato\",\n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_por_adelantado\": false\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_por_adelantado\": false\n  }]\n}",
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir si es un pedido totalmente nuevo, o una actualización/modificación a un pedido existente.\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\nReglas de análisis:\n\nSi el audio pide agregar algo que no tiene relación con los pedidos actuales, clasifícalo como \"nuevo\".\n\nSi el audio pide cambiar cantidades, o detalles,  o cancelar de UNO O MÁS clientes de los PEDIDOS ACTUALES, clasifícalo como \"actualizar\".\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\",\n  \"pedidos_nuevos\": \n  [{\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {\n      \"plato\": \"Nombre del plato\",\n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_por_adelantado\": false\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_por_adelantado\": false\n  }]\n}",
         "inputType": "binary",
         "binaryPropertyName": "=audio",
         "options": {}
@@ -61,8 +61,8 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        1376,
-        64
+        1392,
+        240
       ],
       "id": "dd4d9635-8682-45f9-848d-15f53e4de881",
       "name": "Split Out",
@@ -78,7 +78,7 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "Pedido_voz",
+          "value": "Pedidos",
           "mode": "name"
         },
         "columns": {
@@ -93,8 +93,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "plato",
@@ -103,8 +102,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "cantidad",
@@ -113,8 +111,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "tipo_pedido",
@@ -123,8 +120,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "detalles",
@@ -133,8 +129,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "hora_entrega",
@@ -143,8 +138,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "pago_por_adelantado",
@@ -153,8 +147,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -166,7 +159,7 @@
       "typeVersion": 4.7,
       "position": [
         1792,
-        64
+        240
       ],
       "id": "b898df22-b06f-413e-a966-86fe4cf4db0b",
       "name": "Append row in sheet",
@@ -185,8 +178,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1920,
-        320
+        1792,
+        112
       ],
       "id": "bcfcc519-69e0-4c16-a35d-b2a4271265de",
       "name": "Respond to Webhook"
@@ -245,20 +238,20 @@
       "typeVersion": 3.4,
       "position": [
         1600,
-        64
+        240
       ],
       "id": "81e4f125-b28a-4b51-903b-9325b406f2aa",
       "name": "plano_nuevoPedidos"
     },
     {
       "parameters": {
-        "jsCode": "// Obtenemos los datos del nodo anterior (Gemini)\nconst cliente = $input.first().json.pedidos_nuevos[0].cliente;\nconst pedidos = $input.first().json.pedidos_nuevos[0].pedidos;\n\n// Armamos la lista de platos con sus cantidades\nconst listaPlatos = pedidos.map(item => `${item.cantidad} ${item.tipo_pedido} ${item.plato}`).join(', y ');\n\n// Creamos la frase final\nconst textoParaHablar = `Pedido recibido para ${cliente}. Anotando: ${listaPlatos}.`;\n\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
+        "jsCode": "// Obtenemos los datos del nodo anterior (Gemini)\nlet textoParaHablar = '';\n\nswitch ($input.first().json.intencion)\n{\n  case 'nuevo': {\n    const cliente = $input.first().json.pedidos_nuevos[0].cliente;\n    const pedidos = $input.first().json.pedidos_nuevos[0].pedidos;\n    \n    // Armamos la lista de platos con sus cantidades\n    const listaPlatos = pedidos.map(item => `${item.cantidad} ${item.tipo_pedido} ${item.plato}`).join(', y ');\n    \n    // Creamos la frase final\n    textoParaHablar = `Pedido recibido para ${cliente}. Anotando: ${listaPlatos}.`;\n    \n    \n    break;}\n    \n  case 'actualizar': {\n    const updatePedidos = $input.first().json.actualizaciones;\n    \n    // Armamos la lista de platos con sus cantidades\n    const listaPedidos = updatePedidos.map(item => `${item.cliente} ${item.nuevo_cantidad} ${item.nuevo_tipo_pedido} ${item.nuevo_plato}`).join(', y ');\n    \n    // Creamos la frase final\n    textoParaHablar = ` Anotando cambios: ${listaPedidos}.`;\n    \n    break;}\n}\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1488,
-        224
+        1200,
+        112
       ],
       "id": "76e30fb1-e1cb-42ea-ae5f-b1e37b6ba62b",
       "name": "Code in JavaScript"
@@ -282,8 +275,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1696,
-        320
+        1392,
+        112
       ],
       "id": "c0bfee01-7d2e-4583-bdea-a17282dcd9e9",
       "name": "HTTP Request"
@@ -297,7 +290,7 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "Pedido_voz",
+          "value": "Pedidos",
           "mode": "name"
         },
         "options": {}
@@ -417,7 +410,7 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "Pedido_voz",
+          "value": "Pedidos",
           "mode": "name"
         },
         "columns": {
@@ -520,7 +513,7 @@
       "typeVersion": 4.7,
       "position": [
         1600,
-        544
+        400
       ],
       "id": "6555b696-a145-497f-bc89-460ba7bd77df",
       "name": "Update row in sheet",
@@ -540,7 +533,7 @@
       "typeVersion": 1,
       "position": [
         1392,
-        544
+        400
       ],
       "id": "6c1d3cc4-1122-451f-8929-61b68b6b1849",
       "name": "Split Out1"
@@ -648,11 +641,6 @@
             "node": "Split Out",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Code in JavaScript",
-            "type": "main",
-            "index": 0
           }
         ],
         [
@@ -669,6 +657,11 @@
         [
           {
             "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
             "type": "main",
             "index": 0
           }
@@ -692,7 +685,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "38850ad3-be22-4f62-acc8-66707a23a1a2",
+  "versionId": "ff1c13b7-140e-4f9d-a941-9b2374c278f6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
