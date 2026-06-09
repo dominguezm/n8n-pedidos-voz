@@ -28,7 +28,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir si es un pedido totalmente nuevo, o una actualización/modificación a un pedido existente.\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\nReglas de análisis:\n\nSi el audio pide agregar algo que no tiene relación con los pedidos actuales, clasifícalo como \"nuevo\".\n\nSi el audio pide cambiar la cantidad, detalles o cancelar algo de un cliente que ya está en los PEDIDOS ACTUALES, clasifícalo como \"actualizar\".\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\",\n  \"pedidos_nuevos\": [\n  {\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {\n      \"plato\": \"Nombre del plato\",\n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_por_adelantado\": false\n  }],\n  \"actualizacion\": \n  {\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_por_adelantado\": false\n  }\n}",
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir si es un pedido totalmente nuevo, o una actualización/modificación a un pedido existente.\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\nReglas de análisis:\n\nSi el audio pide agregar algo que no tiene relación con los pedidos actuales, clasifícalo como \"nuevo\".\n\nSi el audio pide cambiar cantidades, o detalles,  o cancelar de UNO O MÁS clientes de los PEDIDOS ACTUALES, clasifícalo como \"actualizar\".\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\",\n  \"pedidos_nuevos\": \n  [{\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {\n      \"plato\": \"Nombre del plato\",\n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_por_adelantado\": false\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_por_adelantado\": false\n  }]\n}",
         "inputType": "binary",
         "binaryPropertyName": "=audio",
         "options": {}
@@ -61,7 +61,7 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        1408,
+        1376,
         64
       ],
       "id": "dd4d9635-8682-45f9-848d-15f53e4de881",
@@ -186,7 +186,7 @@
       "typeVersion": 1.5,
       "position": [
         1920,
-        224
+        320
       ],
       "id": "bcfcc519-69e0-4c16-a35d-b2a4271265de",
       "name": "Respond to Webhook"
@@ -257,7 +257,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1504,
+        1488,
         224
       ],
       "id": "76e30fb1-e1cb-42ea-ae5f-b1e37b6ba62b",
@@ -283,7 +283,7 @@
       "typeVersion": 4.4,
       "position": [
         1696,
-        224
+        320
       ],
       "id": "c0bfee01-7d2e-4583-bdea-a17282dcd9e9",
       "name": "HTTP Request"
@@ -423,13 +423,13 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "plato": "={{ $json.actualizacion.nuevo_plato }}",
-            "row_number": "={{ $json.actualizacion.row_number }}",
-            "cantidad": "={{ $json.actualizacion.nuevo_cantidad }}",
-            "tipo_pedido": "={{ $json.actualizacion.nuevo_tipo_pedido }}",
-            "hora_entrega": "={{ $json.actualizacion.nuevo_hora_entrega }}",
-            "detalles": "={{ $json.actualizacion.nuevo_detalles }}",
-            "pago_por_adelantado": "={{ $json.actualizacion.nuevo_pago_por_adelantado }}"
+            "plato": "={{ $json.nuevo_plato }}",
+            "row_number": "={{ $json.row_number }}",
+            "cantidad": "={{ $json.nuevo_cantidad }}",
+            "tipo_pedido": "={{ $json.nuevo_tipo_pedido }}",
+            "hora_entrega": "={{ $json.nuevo_hora_entrega }}",
+            "detalles": "={{ $json.nuevo_detalles }}",
+            "pago_por_adelantado": "={{ $json.nuevo_pago_por_adelantado }}"
           },
           "matchingColumns": [
             "row_number"
@@ -519,8 +519,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1504,
-        400
+        1600,
+        544
       ],
       "id": "6555b696-a145-497f-bc89-460ba7bd77df",
       "name": "Update row in sheet",
@@ -530,6 +530,20 @@
           "name": "Google Sheets account"
         }
       }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "actualizaciones",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        544
+      ],
+      "id": "6c1d3cc4-1122-451f-8929-61b68b6b1849",
+      "name": "Split Out1"
     }
   ],
   "pinData": {},
@@ -643,7 +657,7 @@
         ],
         [
           {
-            "node": "Update row in sheet",
+            "node": "Split Out1",
             "type": "main",
             "index": 0
           }
@@ -660,6 +674,17 @@
           }
         ]
       ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -667,7 +692,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "a5714b8f-5099-417c-b03f-423e98467b32",
+  "versionId": "38850ad3-be22-4f62-acc8-66707a23a1a2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
