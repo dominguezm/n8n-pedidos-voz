@@ -11,7 +11,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir si es un pedido totalmente nuevo, o una actualización/modificación o eliminacion a un pedidos existentes.\n\nFECHA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\nReglas de análisis:\n\nSi el audio pide agregar algo que no tiene relación con los pedidos actuales, clasifícalo como \"nuevo\".\n\nSi el audio pide cambiar plato, cantidades, o detalles de UNO O MÁS clientes de los PEDIDOS ACTUALES ya registrados, clasifícalo como \"actualizar\".\n\nAl procesar un pedido \"nuevo\", debes incluir la FECHA Y HORA ACTUAL DEL RESTAURANTE proporcionada arriba en el campo \"fecha\" de cada pedido.\n\nSi el audio pide olvidar o quitar el pedido de un cliente de un cliente de un pedido ya registrado, clasificalo como \"Eliminar\".\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual que se te proporcionó\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_por_adelantado\": false\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_por_adelantado\": false\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto,\n    \"resumen_pedido\": \"Breve resumen de los se va Borrar (ej. 1 menu de Lomo saltado de carlos)\"\n  }\n}",
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir la acción a tomar.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nNUEVOS: Si es un pedido nuevo, \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'false' por defecto, y debes asignarle la FECHA ACTUAL.\n\nACTUALIZACIONES DE ESTADO: Si el audio pide indicar que un pedido ya se pagó, se entregó o se devolvieron los platos, actualiza ESAS variables a 'true'.\n\nBLOQUEO DE MODIFICACIÓN: Si en los PEDIDOS ACTUALES un pedido YA TIENE \"se_entrego_pedido\" en 'true' o \"retorno_platos\" en 'true', ESTÁ PROHIBIDO modificar su \"cantidad\", \"plato\" o \"detalles\". En esos casos, el mesero SOLO puede actualizar \"retorno_platos\" o \"pago_completo\".\n\nRESTRICCIÓN DE ELIMINACIÓN: SOLO se puede clasificar como \"eliminar\" si el pedido cumple TRES cosas: La Fecha del pedido es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'.\n\nMANEJO DE ERRORES: Si el mesero intenta eliminar un pedido de otro día, o eliminar/modificar comida de un pedido que ya se entregó, clasifica la intención como \"error_regla\" y escribe un \"mensaje_error\" explicando amablemente por qué no se puede hacer.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"error_regla\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": false,\n    \"se_entrego_pedido\": false,\n    \"retorno_platos\": \"false\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": false,\n    \"nuevo_se_entrego_pedido\": false,\n    \"nuevo_retorno_platos\": false\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto,\n    \"resumen_pedido\": \"Breve resumen de los se va Borrar (ej. 1 menu de Lomo saltado de carlos)\"\n  }\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué. (Ej. 'El pedido es de ayer' o 'El pedido ya fueron los platos entregados').\"\n}",
         "inputType": "binary",
         "binaryPropertyName": "=audio",
         "options": {}
@@ -216,9 +216,21 @@
             },
             {
               "id": "8ae07161-53d3-4252-99db-9c24837bfd98",
-              "name": "pago_por_adelantado",
-              "value": "={{ $json.pedidos_nuevos[0].pago_por_adelantado }}",
+              "name": "pago_completo",
+              "value": "={{ $json.pedidos_nuevos[0].pago_completo }}",
               "type": "boolean"
+            },
+            {
+              "id": "9b69b1ae-098b-44be-8758-fbaa43924ce3",
+              "name": "se_entrego_pedido",
+              "value": "={{ $json.pedidos_nuevos[0].se_entrego_pedido }}",
+              "type": "boolean"
+            },
+            {
+              "id": "b078a4c3-4e70-4587-a465-1440f28d4f54",
+              "name": "retorno_platos",
+              "value": "={{ $json.pedidos_nuevos[0].retorno_platos }}",
+              "type": "string"
             }
           ]
         },
@@ -283,12 +295,25 @@
           "value": "Pedidos",
           "mode": "name"
         },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "pago_completo",
+              "lookupValue": "false"
+            },
+            {
+              "lookupColumn": "retorno_platos",
+              "lookupValue": "false"
+            }
+          ]
+        },
+        "combineFilters": "OR",
         "options": {}
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        512,
+        448,
         336
       ],
       "id": "6a2971ad-77fe-49ea-a3ce-947c880b633e",
@@ -303,12 +328,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nlet textoPedidos = \"No hay pedidos resgistrados actualemente\";\n\nif (items.length > 0 && items[0].json && Object.keys(items[0].json).length > 0)\n{\ntextoPedidos = items.map(item => `fila: ${item.json.row_number} |  fecha: ${item.json.fecha} | cliente: ${item.json.cliente} | cantidad: ${item.json.cantidad} | tipo_pedido: ${item.json.tipo_pedido} | Plato: ${item.json.plato } | detalles: ${item.json.detalles} | hora_entrega: ${item.json.hora_entrega} | pago_por_adelantado: ${item.json.pago_por_adelantado}`).join('\\n');\n}\n\nconst audioBinario = $(\"Webhook_voz\").first().binary;\n\nreturn [{\n  json: {\n    historial_pedidos: textoPedidos\n  },\n  binary: audioBinario\n}];"
+        "jsCode": "const items = $input.all();\nlet textoPedidos = \"No hay pedidos resgistrados actualemente\";\n\nif (items.length > 0 && items[0].json && Object.keys(items[0].json).length > 0)\n{\ntextoPedidos = items.map(item => `fila: ${item.json.row_number} |  fecha: ${item.json.fecha} | cliente: ${item.json.cliente} | cantidad: ${item.json.cantidad} | tipo_pedido: ${item.json.tipo_pedido} | Plato: ${item.json.plato } | detalles: ${item.json.detalles} | hora_entrega: ${item.json.hora_entrega} | pago_completo: ${item.json.pago_completo} | se_entrego_pedido: ${item.json.se_entrego_pedido} | entrego_platos: ${item.json.entrego_platos}`).join('\\n');\n}\n\nconst audioBinario = $(\"Webhook_voz\").first().binary;\n\nreturn [{\n  json: {\n    historial_pedidos: textoPedidos\n  },\n  binary: audioBinario\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        688,
+        672,
         336
       ],
       "id": "9a20c553-3481-417d-bf91-862c87227372",
@@ -353,6 +378,28 @@
                     "id": "2bcd416f-5093-4ecc-9202-c37af20058ca",
                     "leftValue": "={{ $json.intencion }}",
                     "rightValue": "actualizar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e69494ce-ce80-480d-9c44-c95a6613079a",
+                    "leftValue": "={{ $json.intencion }}",
+                    "rightValue": "error_regla",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -412,12 +459,24 @@
             "tipo_pedido": "={{ $json.nuevo_tipo_pedido }}",
             "hora_entrega": "={{ $json.nuevo_hora_entrega }}",
             "detalles": "={{ $json.nuevo_detalles }}",
-            "pago_por_adelantado": "={{ $json.nuevo_pago_por_adelantado }}"
+            "pago_completo": "={{ $json.nuevo_pago_completo }}",
+            "se_entrego_pedido": "={{ $json.nuevo_se_entrego_pedido }}",
+            "retorno_platos": "={{ $json.nuevo_retorno_plato }}"
           },
           "matchingColumns": [
             "row_number"
           ],
           "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
             {
               "id": "cliente",
               "displayName": "cliente",
@@ -427,15 +486,6 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
-            },
-            {
-              "id": "plato",
-              "displayName": "plato",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
             },
             {
               "id": "cantidad",
@@ -449,6 +499,15 @@
             {
               "id": "tipo_pedido",
               "displayName": "tipo_pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "plato",
+              "displayName": "plato",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -474,13 +533,34 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "pago_por_adelantado",
-              "displayName": "pago_por_adelantado",
+              "id": "pago_completo",
+              "displayName": "pago_completo",
               "required": false,
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "se_entrego_pedido",
+              "displayName": "se_entrego_pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "retorno_platos",
+              "displayName": "retorno_platos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "row_number",
@@ -600,7 +680,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        336,
+        224,
         336
       ],
       "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
@@ -619,6 +699,21 @@
       ],
       "id": "58dd0e94-0956-4076-aff0-0819c81e7917",
       "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"estado\": \"rechazado\",\n  \"mensaje\": \"{{ $json.mensaje_error }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1456,
+        592
+      ],
+      "id": "f452699d-2bd7-41de-b9d7-d4569f489594",
+      "name": "Respond to Webhook1"
     }
   ],
   "pinData": {},
@@ -720,6 +815,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -800,7 +902,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "f56b9d5d-35f4-421f-8cf0-049489b2f2ad",
+  "versionId": "87ae84f1-b5bf-4b86-9186-d157006e0eba",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
