@@ -11,7 +11,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir la acción a tomar.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\n\nPEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nNUEVOS: Si es un pedido nuevo, \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'false' por defecto, y debes asignarle la FECHA ACTUAL.\n\nACTUALIZACIONES DE ESTADO: Si el audio pide indicar que un pedido ya se pagó, se entregó o se devolvieron los platos, actualiza ESAS variables a 'true'.\n\nBLOQUEO DE MODIFICACIÓN: Si en los PEDIDOS ACTUALES un pedido YA TIENE \"se_entrego_pedido\" en 'true' o \"retorno_platos\" en 'true', ESTÁ PROHIBIDO modificar su \"cantidad\", \"plato\" o \"detalles\". En esos casos, el mesero SOLO puede actualizar \"retorno_platos\" o \"pago_completo\".\n\nRESTRICCIÓN DE ELIMINACIÓN: SOLO se puede clasificar como \"eliminar\" si el pedido cumple TRES cosas: La Fecha del pedido es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'.\n\nMANEJO DE ERRORES: Si el mesero intenta eliminar un pedido de otro día, o eliminar/modificar comida de un pedido que ya se entregó, clasifica la intención como \"error_regla\" y escribe un \"mensaje_error\" explicando amablemente por qué no se puede hacer.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"error_regla\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": false,\n    \"se_entrego_pedido\": false,\n    \"retorno_platos\": \"false\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": false,\n    \"nuevo_se_entrego_pedido\": false,\n    \"nuevo_retorno_platos\": false\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto,\n    \"resumen_pedido\": \"Breve resumen de los se va Borrar (ej. 1 menu de Lomo saltado de carlos)\"\n  }\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué. (Ej. 'El pedido es de ayer' o 'El pedido ya fueron los platos entregados').\"\n}",
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir la acción a tomar.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\n\nLIMITE DE PEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nNUEVOS: \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'FALSE', asigna la FECHA ACTUAL.\n\nACTUALIZACIONES: Si piden indicar que ya se pagó, entregó o devolvió, actualiza ESAS variables a 'true'.\n\nBLOQUEO: Si un pedido YA TIENE \"se_entrego_pedido\" en 'TRUE' o \"retorno_platos\" en 'TRUE', NO ACTUALIZACES su comida. Solo puedes actualizar \"pago_completo\",\"se_entrego_plato\" o \"retorno_platos\".\n\nELIMINACIÓN: SOLO si la fecha es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'. Si rompe la regla, usa \"error_regla\".\n\nLECTURA Y CONSULTAS: Si el mesero pide leer o consultar o decirle pedidos, la intención es \"consultar\".\n\n- Filtro 1: Si pide los que \"faltan entregar/llevar\", considera solo los que \"se_entrego_pedido\" es false.\n\n- Filtro 2: Si pide los que \"faltan cobrar/recoger\", considera los que \"pago_completo\" es false O \"retorno_platos\" es false.\n\n- Filtro 3: Si pide de un cliente especifico menciona sus pedidos, si no esta nega la exitencia del pedido (ej. \"el pedido mencionado no esta anotado\").\n\n- filtro 4: Si en la consulta se menciona palabras como hoy o ayer limita tu respuesta dentro de la fecha mencionada (ej. \"el dia de hoy no posee pedido pendiente\").\n\n- Prioridad temporal: Compara la \"hora_entrega\" de cada pedido filtrado con la HORA ACTUAL. Si la hora de entrega está a 10 minutos o menos, ya se pasó, o dice \"inmediata\", PON ESE PEDIDO AL PRINCIPIO.\n\n- Redacta un texto fluido y natural para ser hablado por voz en el campo \"guion_lectura\" (ej. \"Para entregar tienes: 2 menus lomos saltados  para Carlos. Después, para las 3, un menu pollo al horno para María...\") incluya el tipo de pedido.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"error_regla\",\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué (Ej. 'El pedido es de ayer, no se puede eliminar' o 'El pedido ya fueron los platos entregados'). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"resumen\": \"Breve resumen de los se va insertar (ej. Anotando pedido de Mechita un menu pollo al horno), actualizar (ej. Anotando cambios: Mechita un menu pollo dorado), eliminar (ej.¿Estás seguro de que deseas eliminar el pedido: 1 menu de Lomo saltado de carlos). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": FALSE,\n    \"se_entrego_pedido\": FALSE,\n    \"retorno_platos\": \"FALSE\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": FALSE/TRUE,\n    \"nuevo_se_entrego_pedido\": FALSE/TRUE,\n    \"nuevo_retorno_platos\": FALSE/TRUE\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto\n  },\n  \"consulta\": {\n    \"guion_lectura\": \"Texto amigable y ordenado listo para el sintetizador de voz\"\n  }\n}",
         "inputType": "binary",
         "binaryPropertyName": "=audio",
         "options": {}
@@ -161,7 +161,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2048,
+        2080,
         112
       ],
       "id": "bcfcc519-69e0-4c16-a35d-b2a4271265de",
@@ -247,7 +247,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Obtenemos los datos del nodo anterior (Gemini)\nlet textoParaHablar = '';\n\nswitch ($input.first().json.intencion)\n{\n  case 'nuevo': {\n    const cliente = $input.first().json.pedidos_nuevos[0].cliente;\n    const pedidos = $input.first().json.pedidos_nuevos[0].pedidos;\n    \n    // Armamos la lista de platos con sus cantidades\n    const listaPlatos = pedidos.map(item => `${item.cantidad} ${item.tipo_pedido} ${item.plato}`).join(', y ');\n    \n    // Creamos la frase final\n    textoParaHablar = `Pedido recibido para ${cliente}. Anotando: ${listaPlatos}.`;\n    \n    \n    break;\n  }\n    \n  case 'actualizar': {\n    const updatePedidos = $input.first().json.actualizaciones;\n    \n    // Armamos la lista de platos con sus cantidades\n    const listaPedidos = updatePedidos.map(item => `${item.cliente} ${item.nuevo_cantidad} ${item.nuevo_tipo_pedido} ${item.nuevo_plato}`).join(', y ');\n    \n    // Creamos la frase final\n    textoParaHablar = ` Anotando cambios: ${listaPedidos}.`;\n    \n    break;\n  }\n  case 'eliminar': {\n    const deletePedido = $input.first().json.eliminacion;\n    textoParaHablar = `¿Estás seguro de que deseas eliminar el pedido: ${deletePedido.resumen_pedido}.}`;\n    break;\n  }\n}\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
+        "jsCode": "// Obtenemos los datos del nodo anterior (Gemini)\nlet textoParaHablar = '';\n\nswitch ($input.first().json.intencion)\n{\n  case 'nuevo': {\n    textoParaHablar = $input.first().json.resumen;\n    break;\n  }   \n  case 'actualizar': {\n    textoParaHablar = $input.first().json.resumen;\n    break;\n  }\n  case 'eliminar': {\n    textoParaHablar = $input.first().json.resumen;\n    break;\n  }\n  case 'error_regla': {\n    textoParaHablar = $input.first().json.mensaje_error;\n    break;\n  }\n  case 'consultar': {\n    textoParaHablar = $input.first().json.consulta.guion_lectura;\n    break;\n  }\n}\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -378,28 +378,6 @@
                     "id": "2bcd416f-5093-4ecc-9202-c37af20058ca",
                     "leftValue": "={{ $json.intencion }}",
                     "rightValue": "actualizar",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "id": "e69494ce-ce80-480d-9c44-c95a6613079a",
-                    "leftValue": "={{ $json.intencion }}",
-                    "rightValue": "error_regla",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -582,8 +560,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1616,
-        416
+        1760,
+        448
       ],
       "id": "6555b696-a145-497f-bc89-460ba7bd77df",
       "name": "Update row in sheet",
@@ -602,8 +580,8 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        1408,
-        416
+        1520,
+        432
       ],
       "id": "6c1d3cc4-1122-451f-8929-61b68b6b1849",
       "name": "Split Out1"
@@ -627,7 +605,7 @@
       "typeVersion": 4.7,
       "position": [
         1216,
-        -80
+        -32
       ],
       "id": "68bdf390-6fac-4a3f-bf74-e8b5a1ccc65c",
       "name": "Delete rows or columns from sheet",
@@ -640,21 +618,6 @@
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "{\n  \"estado\": \"exito\", \n  \"mensaje\": \"Pedido eliminado correctamente de la cocina\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        1488,
-        -64
-      ],
-      "id": "aad7259a-5bc6-4ace-bf29-90273376f2d7",
-      "name": "Respond to Webhook2"
-    },
-    {
-      "parameters": {
         "httpMethod": "POST",
         "path": "confirmar-eliminacion",
         "responseMode": "responseNode",
@@ -663,8 +626,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        960,
-        -80
+        992,
+        -32
       ],
       "id": "46d4c5f4-21b1-46ac-9169-3e00e1f0bfab",
       "name": "Webhook_delete",
@@ -689,7 +652,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst intencion = $('json_pedidos').first()?.json?.intencion;\n\nif(intencion !== \"eliminar\"){\n  return [{\n    binary: $input.first().binary\n  }];\n}\nelse{\n  return [{\n    json: {\n    \"estado\": \"requiere_confirmacion\",\n    \"accion\": \"eliminar\",\n    \"datos\": {\n      \"fila\": $('json_pedidos').first().json.eliminacion.row_number,\n      \"mensaje_popup\": $('Code in JavaScript').first().json.guion\n      }\n    },\n    binary: $input.first().binary\n  }];\n}"
+        "jsCode": "\nconst intencion = $input.first()?.json?.intencion;\n\nif(intencion !== \"eliminar\"){\n  return [{\n    binary: $input.first().binary\n  }];\n}\nelse{\n  return [{\n    json: {\n    \"estado\": \"requiere_confirmacion\",\n    \"accion\": \"eliminar\",\n    \"datos\": {\n      \"fila\": $('json_pedidos').first().json.eliminacion.row_number,\n      \"mensaje_popup\": $('Code in JavaScript').first().json.guion\n      }\n    },\n    binary: $input.first().binary\n  }];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -702,18 +665,16 @@
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"estado\": \"rechazado\",\n  \"mensaje\": \"{{ $json.mensaje_error }}\"\n}",
-        "options": {}
+        "jsCode": "return {\n  json: {\n    intencion: \"respuesta\",\n    guion: \"Pedido eliminado correctamente de la lista\"\n  }\n};"
       },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        1456,
-        592
+        1408,
+        -32
       ],
-      "id": "f452699d-2bd7-41de-b9d7-d4569f489594",
-      "name": "Respond to Webhook1"
+      "id": "10fdabbd-f3a8-4e40-b474-e24b03317880",
+      "name": "Code in JavaScript3"
     }
   ],
   "pinData": {},
@@ -815,13 +776,6 @@
             "type": "main",
             "index": 0
           }
-        ],
-        [
-          {
-            "node": "Respond to Webhook1",
-            "type": "main",
-            "index": 0
-          }
         ]
       ]
     },
@@ -856,7 +810,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook2",
+            "node": "Code in JavaScript3",
             "type": "main",
             "index": 0
           }
@@ -895,6 +849,22 @@
           }
         ]
       ]
+    },
+    "Update row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -902,7 +872,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "87ae84f1-b5bf-4b86-9186-d157006e0eba",
+  "versionId": "13e56405-52e6-47d7-ae80-347a3fffd823",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
