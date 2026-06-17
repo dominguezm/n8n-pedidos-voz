@@ -11,7 +11,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y compararlo con los PEDIDOS ACTUALES para decidir la acción a tomar.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\n\nLIMITE DE PEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\n\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nNUEVOS: \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'FALSE', asigna la FECHA ACTUAL.\n\nACTUALIZACIONES: Si piden indicar que ya se pagó, entregó o devolvió, actualiza ESAS variables a 'true'.\n\nBLOQUEO: Si un pedido YA TIENE \"se_entrego_pedido\" en 'TRUE' o \"retorno_platos\" en 'TRUE', NO ACTUALIZACES su comida. Solo puedes actualizar \"pago_completo\",\"se_entrego_plato\" o \"retorno_platos\".\n\nELIMINACIÓN: SOLO si la fecha es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'. Si rompe la regla, usa \"error_regla\".\n\nLECTURA Y CONSULTAS: Si el mesero pide leer o consultar o decirle pedidos, la intención es \"consultar\".\n\n- Filtro 1: Si pide los que \"faltan entregar/llevar\", considera solo los que \"se_entrego_pedido\" es false.\n\n- Filtro 2: Si pide los que \"faltan cobrar/recoger\", considera los que \"pago_completo\" es false O \"retorno_platos\" es false.\n\n- Filtro 3: Si pide de un cliente especifico menciona sus pedidos, si no esta nega la exitencia del pedido (ej. \"el pedido mencionado no esta anotado\").\n\n- filtro 4: Si en la consulta se menciona palabras como hoy o ayer limita tu respuesta dentro de la fecha mencionada (ej. \"el dia de hoy no posee pedido pendiente\").\n\n- Prioridad temporal: Compara la \"hora_entrega\" de cada pedido filtrado con la HORA ACTUAL. Si la hora de entrega está a 10 minutos o menos, ya se pasó, o dice \"inmediata\", PON ESE PEDIDO AL PRINCIPIO.\n\n- Redacta un texto fluido y natural para ser hablado por voz en el campo \"guion_lectura\" (ej. \"Para entregar tienes: 2 menus lomos saltados  para Carlos. Después, para las 3, un menu pollo al horno para María...\") incluya el tipo de pedido.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"error_regla\",\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué (Ej. 'El pedido es de ayer, no se puede eliminar' o 'El pedido ya fueron los platos entregados'). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"resumen\": \"Breve resumen de los se va insertar (ej. Anotando pedido de Mechita un menu pollo al horno), actualizar (ej. Anotando cambios: Mechita un menu pollo dorado), eliminar (ej.¿Estás seguro de que deseas eliminar el pedido: 1 menu de Lomo saltado de carlos). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": FALSE,\n    \"se_entrego_pedido\": FALSE,\n    \"retorno_platos\": \"FALSE\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": FALSE/TRUE,\n    \"nuevo_se_entrego_pedido\": FALSE/TRUE,\n    \"nuevo_retorno_platos\": FALSE/TRUE\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto\n  },\n  \"consulta\": {\n    \"guion_lectura\": \"Texto amigable y ordenado listo para el sintetizador de voz\"\n  }\n}",
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero y tienes acceso a los pedidos actuales y a la memoria histórica de gustos de los clientes.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\n\nLIMITE DE PEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\nCLIENTES REGISTRADOS Y SUS PREFERENCIAS:\n{{ $json.lista_clientes }}\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nMEMORIA DE CLIENTES: Si el audio pide comida para un cliente que ESTÁ en la LISTA DE CLIENTES, debes agregar automáticamente sus \"Preferencias\" al campo \"detalles\" del pedido, combinándolo con lo que el mesero haya dicho. (Ej. Si María pide Lomo, y en preferencias dice \"sin cebolla\", pon \"sin cebolla\" en los detalles).\n\nAPRENDIZAJE: Si el mesero menciona un gusto recurrente (ej. \"anota que a Carlos siempre ponle harto ají\" o \"como siempre, sin bebida\"), extrae esa información y colócala en el arreglo \"clientes_a_guardar\".\n\nINTENCIONES: Siguen siendo \"nuevo\", \"actualizar\", \"eliminar\", \"consultar\" o \"error_regla\" (aplicando las reglas de estado y fechas).\n\nPEDIDOS NUEVOS: \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'FALSE', asigna la FECHA ACTUAL.\n\nACTUALIZACIONES: Si piden indicar que ya se pagó, entregó o devolvió, actualiza ESAS variables a 'true'.\n\nBLOQUEO: Si un pedido YA TIENE \"se_entrego_pedido\" en 'TRUE' o \"retorno_platos\" en 'TRUE', NO ACTUALIZACES su comida. Solo puedes actualizar \"pago_completo\",\"se_entrego_plato\" o \"retorno_platos\".\n\nELIMINACIÓN: SOLO si la fecha es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'. Si rompe la regla, usa \"error_regla\".\n\nLECTURA Y CONSULTAS: Si el mesero pide leer o consultar o decirle pedidos, la intención es \"consultar\".\n\n- Filtro 1: Si pide los que \"faltan entregar/llevar\", considera solo los que \"se_entrego_pedido\" es false.\n\n- Filtro 2: Si pide los que \"faltan cobrar/recoger\", considera los que \"pago_completo\" es false O \"retorno_platos\" es false.\n\n- Filtro 3: Si pide de un cliente especifico menciona sus pedidos, si no esta nega la exitencia del pedido (ej. \"el pedido mencionado no esta anotado\").\n\n- filtro 4: Si en la consulta se menciona palabras como hoy o ayer limita tu respuesta dentro de la fecha mencionada (ej. \"el dia de hoy no posee pedido pendiente\").\n\n- Prioridad temporal: Compara la \"hora_entrega\" de cada pedido filtrado con la HORA ACTUAL. Si la hora de entrega está a 10 minutos o menos, ya se pasó, o dice \"inmediata\", PON ESE PEDIDO AL PRINCIPIO.\n\n- Redacta un texto fluido y natural para ser hablado por voz en el campo \"guion_lectura\" (ej. \"Para entregar tienes: 2 menus lomos saltados  para Carlos. Después, para las 3, un menu pollo al horno para María...\") incluya el tipo de pedido.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"error_regla\",\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué (Ej. 'El pedido es de ayer, no se puede eliminar' o 'El pedido ya fueron los platos entregados'). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"resumen\": \"Breve resumen de los se va insertar (ej. Anotando pedido de Mechita un menu pollo al horno), actualizar (ej. Anotando cambios: Mechita un menu pollo dorado), eliminar (ej.¿Estás seguro de que deseas eliminar el pedido: 1 menu de Lomo saltado de carlos). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": FALSE,\n    \"se_entrego_pedido\": FALSE,\n    \"retorno_platos\": \"FALSE\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": FALSE/TRUE,\n    \"nuevo_se_entrego_pedido\": FALSE/TRUE,\n    \"nuevo_retorno_platos\": FALSE/TRUE\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto\n  },\n  \"consulta\": {\n    \"guion_lectura\": \"Texto amigable y ordenado listo para el sintetizador de voz\"\n  }\n  \"clientes_a_guardar\": \n  [{ \n    \"cliente\": \"Nombre del cliente no registrado\", \n    \"preferencias\": \"Gustos recurrentes a recordar\" \n  }]\n}",
         "inputType": "binary",
         "binaryPropertyName": "=audio",
         "options": {}
@@ -285,50 +285,7 @@
     },
     {
       "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
-          "mode": "url"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "Pedidos",
-          "mode": "name"
-        },
-        "filtersUI": {
-          "values": [
-            {
-              "lookupColumn": "pago_completo",
-              "lookupValue": "false"
-            },
-            {
-              "lookupColumn": "retorno_platos",
-              "lookupValue": "false"
-            }
-          ]
-        },
-        "combineFilters": "OR",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        448,
-        336
-      ],
-      "id": "6a2971ad-77fe-49ea-a3ce-947c880b633e",
-      "name": "Get row(s) in sheet",
-      "alwaysOutputData": true,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CVt5NlaUYmtUmFhM",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = $input.all();\nlet textoPedidos = \"No hay pedidos resgistrados actualemente\";\n\nif (items.length > 0 && items[0].json && Object.keys(items[0].json).length > 0)\n{\ntextoPedidos = items.map(item => `fila: ${item.json.row_number} |  fecha: ${item.json.fecha} | cliente: ${item.json.cliente} | cantidad: ${item.json.cantidad} | tipo_pedido: ${item.json.tipo_pedido} | Plato: ${item.json.plato } | detalles: ${item.json.detalles} | hora_entrega: ${item.json.hora_entrega} | pago_completo: ${item.json.pago_completo} | se_entrego_pedido: ${item.json.se_entrego_pedido} | entrego_platos: ${item.json.entrego_platos}`).join('\\n');\n}\n\nconst audioBinario = $(\"Webhook_voz\").first().binary;\n\nreturn [{\n  json: {\n    historial_pedidos: textoPedidos\n  },\n  binary: audioBinario\n}];"
+        "jsCode": "const pedidosData = $('Obtener pedidos').all();\nconst clientesData = $('Obtener clientes').all();\n\nlet textoPedidos = \"No hay pedidos activos\";\n\nif (pedidosData.length > 0 && pedidosData[0].json && Object.keys(pedidosData[0].json).length > 0)\n{\n  textoPedidos = pedidosData.map(item => `fila: ${item.json.row_number} |  fecha: ${item.json.fecha} | cliente: ${item.json.cliente} | cantidad: ${item.json.cantidad} | tipo_pedido: ${item.json.tipo_pedido} | Plato: ${item.json.plato } | detalles: ${item.json.detalles} | hora_entrega: ${item.json.hora_entrega} | pago_completo: ${item.json.pago_completo} | se_entrego_pedido: ${item.json.se_entrego_pedido} | entrego_platos: ${item.json.entrego_platos}`).join('\\n');\n}\n\nlet textoClientes = \"No hay clientes registrados aún.\"\nif (clientesData.length > 0 && clientesData[0].json && Object.keys(clientesData[0].json).length > 0)\n{\n  textoClientes = clientesData.map(item => `Cliente: ${item.json.Cliente} | Preferencias: ${item.json.Preferencias}`).join('\\n');\n}\n\n\nconst audioBinario = $(\"Webhook_voz\").first().binary;\n\nreturn [{\n  json: {\n    historial_pedidos: textoPedidos,\n    lista_clientes: textoClientes\n  },\n  binary: audioBinario\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -643,7 +600,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        224,
+        48,
         336
       ],
       "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
@@ -675,6 +632,191 @@
       ],
       "id": "10fdabbd-f3a8-4e40-b474-e24b03317880",
       "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pedidos",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "pago_completo",
+              "lookupValue": "false"
+            },
+            {
+              "lookupColumn": "retorno_platos",
+              "lookupValue": "false"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        336
+      ],
+      "id": "6a2971ad-77fe-49ea-a3ce-947c880b633e",
+      "name": "Obtener pedidos",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Clientes",
+          "mode": "name"
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        336
+      ],
+      "id": "ac99b929-bdab-48e6-9a6c-7fa832ae508d",
+      "name": "Obtener clientes",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "53f3e174-f05c-4bf3-a963-b64f43e3af51",
+              "leftValue": "={{ $json.pedidos_nuevos[0].cliente }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1232,
+        624
+      ],
+      "id": "153664b6-6ba6-4e86-855f-4a905e4203d0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "clientes_a_guardar",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        608
+      ],
+      "id": "b9f365ee-4a66-4e22-87d3-f3d6eda507a4",
+      "name": "Split Out2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1K9UboAeFwOSsWpWb6syh-BRMz2x5VGbTwPj8m_xOy54/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Clientes",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cliente": "={{ $json.cliente }}",
+            "Preferencias": "={{ $json.preferencias }}"
+          },
+          "matchingColumns": [
+            "Cliente"
+          ],
+          "schema": [
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Preferencias",
+              "displayName": "Preferencias",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1632,
+        608
+      ],
+      "id": "41d6f16d-d0b4-41d4-b10d-6000df0a4878",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CVt5NlaUYmtUmFhM",
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -739,17 +881,6 @@
         ]
       ]
     },
-    "Get row(s) in sheet": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Code in JavaScript1": {
       "main": [
         [
@@ -789,6 +920,11 @@
           },
           {
             "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
             "type": "main",
             "index": 0
           }
@@ -832,7 +968,7 @@
       "main": [
         [
           {
-            "node": "Get row(s) in sheet",
+            "node": "Obtener pedidos",
             "type": "main",
             "index": 0
           }
@@ -865,6 +1001,50 @@
           }
         ]
       ]
+    },
+    "Obtener pedidos": {
+      "main": [
+        [
+          {
+            "node": "Obtener clientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener clientes": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Split Out2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out2": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -872,7 +1052,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "13e56405-52e6-47d7-ae80-347a3fffd823",
+  "versionId": "27b20727-69ae-4413-8e2c-88ebda92c8fa",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
