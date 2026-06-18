@@ -11,7 +11,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-3.1-flash-lite"
         },
-        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero. Tienes acceso a pedidos, clientes y la carta del día.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\nCARTA REGISTRADA:\n{{ $json.carta_del_dia }}\nLIMITE DE PEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\nCLIENTES REGISTRADOS Y SUS PREFERENCIAS:\n{{ $json.lista_clientes }}\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nREGISTRAR CARTA: Si el usuario dicta los platos del turno, la intención es \"registrar_carta\". Extrae el turno (desayuno/almuerzo/cena), plato, tipo (sopa/segundo/bebida) y si es almuerzo pertenece al menú estándar (true). Asígnales la FECHA ACTUAL.\n\nVALIDACIÓN DE PEDIDOS (NUEVO): Cuando un cliente haga un pedido, CRUZA lo que pide con la \"CARTA REGISTRADA\" de hoy. Escribe el nombre del plato exactamente como está en la carta.\n\nMEMORIA DE CLIENTES: Añade automáticamente las \"Preferencias\" del cliente a los \"detalles\" del pedido si el cliente existe en la lista. Si menciona un gusto nuevo, tambien si menciona un nuevo cliente guárdalo en \"clientes_a_guardar\".\n\nINTENCIONES: Siguen siendo \"nuevo\", \"actualizar\", \"eliminar\", \"consultar\", \"registrar_carta\" o \"error_regla\" (aplicando las reglas de estado y fechas).\n\nPEDIDOS NUEVOS: \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'FALSE', asigna la FECHA ACTUAL.\n\nACTUALIZACIONES: Si piden indicar que ya se pagó, entregó o devolvió, actualiza ESAS variables a 'true'.\n\nBLOQUEO: Si un pedido YA TIENE \"se_entrego_pedido\" en 'TRUE' o \"retorno_platos\" en 'TRUE', NO ACTUALIZACES su comida. Solo puedes actualizar \"pago_completo\",\"se_entrego_plato\" o \"retorno_platos\".\n\nELIMINACIÓN: SOLO si la fecha es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'. Si rompe la regla, usa \"error_regla\".\n\nLECTURA Y CONSULTAS: Si el mesero pide leer o consultar o decirle pedidos, la intención es \"consultar\".\n\n- Filtro 1: Si pide los que \"faltan entregar/llevar\", considera solo los que \"se_entrego_pedido\" es false.\n\n- Filtro 2: Si pide los que \"faltan cobrar/recoger\", considera los que \"pago_completo\" es false O \"retorno_platos\" es false.\n\n- Filtro 3: Si pide de un cliente especifico menciona sus pedidos, si no esta nega la exitencia del pedido (ej. \"el pedido mencionado no esta anotado\").\n\n- filtro 4: Si en la consulta se menciona palabras como hoy o ayer limita tu respuesta dentro de la fecha mencionada (ej. \"el dia de hoy no posee pedido pendiente\").\n\n- Prioridad temporal: Compara la \"hora_entrega\" de cada pedido filtrado con la HORA ACTUAL. Si la hora de entrega está a 10 minutos o menos, ya se pasó, o dice \"inmediata\", PON ESE PEDIDO AL PRINCIPIO.\n\n- Redacta un texto fluido y natural para ser hablado por voz en el campo \"guion_lectura\" (ej. \"Para entregar tienes: 2 menus lomos saltados  para Carlos. Después, para las 3, un menu pollo al horno para María...\") incluya el tipo de pedido.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"registrar_carta\" o \"error_regla\",\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué (Ej. 'El pedido es de ayer, no se puede eliminar' o 'El pedido ya fueron los platos entregados'). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"resumen\": \"Breve resumen de los se va insertar (ej. Anotando pedido de Mechita un menu pollo al horno), actualizar (ej. Anotando cambios: Mechita un menu pollo dorado), eliminar (ej.¿Estás seguro de que deseas eliminar el pedido: 1 menu de Lomo saltado de carlos). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": FALSE,\n    \"se_entrego_pedido\": FALSE,\n    \"retorno_platos\": \"FALSE\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": FALSE/TRUE,\n    \"nuevo_se_entrego_pedido\": FALSE/TRUE,\n    \"nuevo_retorno_platos\": FALSE/TRUE\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto\n  },\n  \"consulta\": {\n    \"guion_lectura\": \"Texto amigable y ordenado listo para el sintetizador de voz\"\n  }\n  \"clientes_a_guardar\": \n  [{ \n    \"cliente\": \"Nombre del cliente no registrado\", \n    \"preferencias\": \"Gustos recurrentes a recordar\" \n  }]\n  \"nueva_carta\": \n  [{ \n    \"fecha\": \"Fecha sin hora dd/MM/yyyy\", \n    \"turno\": \"desayuno/almuerzo/cena\", \n    \"plato\": \"caldo blanco\", \n    \"tipo\": \"sopa\", \n    \"incluido_en_menu\": FALSE \n  }]\n}",
+        "text": "=Eres el asistente inteligente de un restaurante. Tu tarea es escuchar el audio del mesero. Tienes acceso a pedidos, clientes y la carta del día.\n\nFECHA Y HORA ACTUAL DEL RESTAURANTE (GMT-5):\n{{ $now.setZone('America/Lima').toFormat('dd/MM/yyyy HH:mm:ss') }}\nCARTA REGISTRADA:\n{{ $json.carta_del_dia }}\nLIMITE DE PEDIDOS ACTUALES REGISTRADOS:\n{{ $json.historial_pedidos }}\nCLIENTES REGISTRADOS Y SUS PREFERENCIAS:\n{{ $json.lista_clientes }}\n\nREGLAS DE NEGOCIO ESTRICTAS:\n\nREGISTRAR CARTA: Si el usuario dicta los platos del turno, la intención es \"registrar_carta\". Extrae el turno (desayuno/almuerzo/cena), plato, tipo (sopa/segundo/bebida) y si es almuerzo pertenece al menú estándar (true). Asígnales la FECHA ACTUAL.\n\nVALIDACIÓN DE PEDIDOS (NUEVO): Cuando un cliente haga un pedido, CRUZA lo que pide con la \"CARTA REGISTRADA\" de hoy. Escribe el nombre del plato exactamente como está en la carta.\n\nMANEJO DE AMBIGÜEDAD Y ERRORES: Si el audio es incomprensible (ruido), o si falta información CRÍTICA para realizar una acción (ej. el mesero pide un plato pero no dice el nombre del cliente, o pide actualizar pero no se entiende qué pedido), NO ADIVINES. Clasifica la intención como \"aclaracion\" y redacta una pregunta natural y breve para el mesero en el campo \"guion_aclaracion\" (ej. \"Disculpa, ¿para quien es el lomo saltado?\").\n\nMEMORIA DE CLIENTES: Añade automáticamente las \"Preferencias\" del cliente a los \"detalles\" del pedido si el cliente existe en la lista. Si menciona un gusto nuevo, tambien si menciona un nuevo cliente guárdalo en \"clientes_a_guardar\".\n\nINTENCIONES: Siguen siendo \"nuevo\", \"actualizar\", \"eliminar\", \"consultar\", \"registrar_carta\", \"error_regla\" o \"aclaracion\" (aplicando las reglas de estado y fechas).\n\nPEDIDOS NUEVOS: \"pago_completo\", \"se_entrego_pedido\" y \"retorno_platos\" deben ser 'FALSE', asigna la FECHA ACTUAL.\n\nACTUALIZACIONES: Si piden indicar que ya se pagó, entregó o devolvió, actualiza ESAS variables a 'true'.\n\nBLOQUEO: Si un pedido YA TIENE \"se_entrego_pedido\" en 'TRUE' o \"retorno_platos\" en 'TRUE', NO ACTUALIZACES su comida. Solo puedes actualizar \"pago_completo\",\"se_entrego_plato\" o \"retorno_platos\".\n\nELIMINACIÓN: SOLO si la fecha es de HOY, \"se_entrego_pedido\" es 'false', y \"retorno_platos\" es 'false'. Si rompe la regla, usa \"error_regla\".\n\nLECTURA Y CONSULTAS: Si el mesero pide leer o consultar o decirle pedidos, la intención es \"consultar\".\n\n- Filtro 1: Si pide los que \"faltan entregar/llevar\", considera solo los que \"se_entrego_pedido\" es false.\n\n- Filtro 2: Si pide los que \"faltan cobrar/recoger\", considera los que \"pago_completo\" es false O \"retorno_platos\" es false.\n\n- Filtro 3: Si pide de un cliente especifico menciona sus pedidos, si no esta nega la exitencia del pedido (ej. \"el pedido mencionado no esta anotado\").\n\n- filtro 4: Si en la consulta se menciona palabras como hoy o ayer limita tu respuesta dentro de la fecha mencionada (ej. \"el dia de hoy no posee pedido pendiente\").\n\n- Prioridad temporal: Compara la \"hora_entrega\" de cada pedido filtrado con la HORA ACTUAL. Si la hora de entrega está a 10 minutos o menos, ya se pasó, o dice \"inmediata\", PON ESE PEDIDO AL PRINCIPIO.\n\n- Redacta un texto fluido y natural para ser hablado por voz en el campo \"guion_lectura\" (ej. \"Para entregar tienes: 2 menus lomos saltados  para Carlos. Después, para las 3, un menu pollo al horno para María...\") incluya el tipo de pedido.\n\n\nDevuelve ÚNICAMENTE un objeto JSON estricto, sin texto adicional ni bloques markdown.\n\nEsquema JSON esperado:\n{\n  \"intencion\": \"nuevo\" o \"actualizar\" o \"eliminar\" o \"registrar_carta\" o \"error_regla\",\n  \"mensaje_error\": \"Solo llénalo si la intención es error_regla, explica brevemente por qué (Ej. 'El pedido es de ayer, no se puede eliminar' o 'El pedido ya fueron los platos entregados'). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"resumen\": \"Breve resumen de los se va insertar (ej. Anotando pedido de Mechita un menu pollo al horno), actualizar (ej. Anotando cambios: Mechita un menu pollo dorado), eliminar (ej.¿Estás seguro de que deseas eliminar el pedido: 1 menu de Lomo saltado de carlos). Texto amigable y ordenado listo para el sintetizador de voz\",\n  \"pedidos_nuevos\": \n  [{\n    \"fecha\": \"Aquí debes colocar exactamente la fecha y hora actual inyectada\",\n    \"cliente\": \"Nombre\",\n    \"pedidos\": [\n    {      \n      \"cantidad\": 1,\n      \"tipo_pedido\": \"menu/extra/sopa/segundo\",\n      \"plato\": \"Nombre del plato\",\n      \"detalles\": \"sin cebolla, con harto aji\"\n    }],\n    \"hora_entrega\": \"inmediata\",\n    \"pago_completo\": FALSE,\n    \"se_entrego_pedido\": FALSE,\n    \"retorno_platos\": \"FALSE\"\n  }],\n  \"actualizaciones\": \n  [{\n    \"row_number\": Numero de la fila exacta a modificar extraída del contexto,\n    \"cliente\": \"Nombre\",\n    \"nuevo_plato\": \"Nombre del plato\",\n    \"nuevo_cantidad\": 1,\n    \"nuevo_tipo_pedido\": \"menu/extra/sopa/segundo\",\n    \"nuevo_detalles\": \"sin cebolla, con harto aji\"\n    \"nuevo_hora_entrega\": \"inmediata\",\n    \"nuevo_pago_completo\": FALSE/TRUE,\n    \"nuevo_se_entrego_pedido\": FALSE/TRUE,\n    \"nuevo_retorno_platos\": FALSE/TRUE\n  }],\n  \"eliminacion\":\n  {\n    \"row_number\": Numero de Fila exacta a eliminar extraida del contexto\n  },\n  \"consulta\": {\n    \"guion_lectura\": \"Texto amigable y ordenado listo para el sintetizador de voz\"\n  }\n  \"clientes_a_guardar\": \n  [{ \n    \"cliente\": \"Nombre del cliente no registrado\", \n    \"preferencias\": \"Gustos recurrentes a recordar\" \n  }]\n  \"nueva_carta\": \n  [{ \n    \"fecha\": \"Fecha sin hora dd/MM/yyyy\", \n    \"turno\": \"desayuno/almuerzo/cena\", \n    \"plato\": \"caldo blanco\", \n    \"tipo\": \"sopa\", \n    \"incluido_en_menu\": FALSE \n  }]\n  \"aclaracion\": \n  {\n    \"guion_aclaracion\": \"Texto amigable pidiendo que repita o complete la información faltante.\"\n  }\n}",
         "inputType": "binary",
         "binaryPropertyName": "=audio",
         "options": {}
@@ -418,6 +418,28 @@
                 ],
                 "combinator": "and"
               }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "12046a48-bd07-40c5-8149-9a537d0083d1",
+                    "leftValue": "={{ $json.intencion }}",
+                    "rightValue": "aclaracion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
             }
           ]
         },
@@ -621,7 +643,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1840,
+        1760,
         -32
       ],
       "id": "68bdf390-6fac-4a3f-bf74-e8b5a1ccc65c",
@@ -643,7 +665,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        1440,
+        1504,
         -32
       ],
       "id": "46d4c5f4-21b1-46ac-9169-3e00e1f0bfab",
@@ -660,8 +682,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        672,
-        304
+        704,
+        272
       ],
       "id": "a60a78cb-84ab-4dfd-9108-141ce91961b2",
       "name": "Webhook_voz",
@@ -687,7 +709,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2208,
+        2032,
         -32
       ],
       "id": "10fdabbd-f3a8-4e40-b474-e24b03317880",
@@ -724,7 +746,7 @@
       "typeVersion": 4.7,
       "position": [
         960,
-        96
+        80
       ],
       "id": "6a2971ad-77fe-49ea-a3ce-947c880b633e",
       "name": "Obtener pedidos",
@@ -754,7 +776,7 @@
       "typeVersion": 4.7,
       "position": [
         960,
-        304
+        272
       ],
       "id": "ac99b929-bdab-48e6-9a6c-7fa832ae508d",
       "name": "Obtener clientes",
@@ -795,8 +817,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1712,
-        960
+        1792,
+        1056
       ],
       "id": "153664b6-6ba6-4e86-855f-4a905e4203d0",
       "name": "If"
@@ -809,8 +831,8 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        1968,
-        944
+        2032,
+        1040
       ],
       "id": "b9f365ee-4a66-4e22-87d3-f3d6eda507a4",
       "name": "Split Out2"
@@ -866,8 +888,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        2192,
-        944
+        2224,
+        1040
       ],
       "id": "41d6f16d-d0b4-41d4-b10d-6000df0a4878",
       "name": "Append or update row in sheet",
@@ -904,7 +926,7 @@
       "typeVersion": 4.7,
       "position": [
         960,
-        512
+        480
       ],
       "id": "9dbc6938-3692-4eef-9c09-6eda2d7ec6d2",
       "name": "Obtener Carta",
@@ -1056,8 +1078,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1840,
-        656
+        1904,
+        640
       ],
       "id": "436685ac-556b-4d5f-9668-1750ff489b5c",
       "name": "Code in JavaScript8"
@@ -1069,11 +1091,24 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1840,
-        816
+        1904,
+        768
       ],
       "id": "2803c546-b9e8-4d26-9de9-42c2b6211fa2",
       "name": "Code in JavaScript9"
+    },
+    {
+      "parameters": {
+        "jsCode": "let textoParaHablar = $input.first().json.aclaracion.guion_aclaracion;\n// Devolvemos el texto listo para Kokoro\nreturn {\n  json: {\n    guion: textoParaHablar\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        912
+      ],
+      "id": "a697a464-bd3f-4cf1-9984-28613d1ce95b",
+      "name": "Code in JavaScript"
     }
   ],
   "pinData": {},
@@ -1184,6 +1219,13 @@
         [
           {
             "node": "Code in JavaScript9",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
             "type": "main",
             "index": 0
           }
@@ -1392,6 +1434,17 @@
           }
         ]
       ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -1399,7 +1452,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "cbf5616f-19ed-4dce-bf58-6c8f946c0a72",
+  "versionId": "809d17de-97cd-44ff-b937-e5f9dd1cdb51",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "34b5bb8aa43b04a2f7b2c2a08ee4bccaaedb04a27c66d5a324ba2a2d89e5f36d"
