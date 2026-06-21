@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intercomunicador n8n - MP3</title>
+    <script src="https://unpkg.com/mic-recorder-to-mp3"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 40px auto;
+            text-align: center;
+            background-color: #f4f4f9;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 15px 25px;
+            font-size: 16px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #startBtn { background-color: #28a745; color: white; }
+        #startBtn:disabled { background-color: #a5d8b0; cursor: not-allowed; }
+        #stopBtn { background-color: #dc3545; color: white; }
+        #stopBtn:disabled { background-color: #e59ea4; cursor: not-allowed; }
+        #status {
+            font-weight: bold;
+            margin: 20px 0;
+            color: #555;
+        }
+        audio { width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🎙️ Grabar MP3 y Enviar a n8n</h2>
+        
+        <button id="startBtn">🔴 Iniciar Grabación</button>
+        <button id="stopBtn" disabled>⏹️ Detener y Enviar</button>
+        
+        <p id="status">Listo para grabar...</p>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+
+        <h2>🎧 Respuesta de n8n</h2>
+        <audio id="audioResponse" controls></audio>
+    </div>
+
+    <script>
+        // ⚠️ REEMPLAZA ESTA URL POR LA URL DE TU WEBHOOK EN N8N
+        const n8nWebhookUrl = 'http://localhost:5678/webhook-test/recibir-audio'; 
+
+        // Inicializamos el grabador MP3 con un bitrate de 128kbps (buena calidad para voz)
+        const recorder = new MicRecorder({
+            bitRate: 128
+        });
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const status = document.getElementById('status');
+        const audioResponse = document.getElementById('audioResponse');
+
+        // Iniciar grabación
+        startBtn.addEventListener('click', () => {
+            recorder.start().then(() => {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                status.innerText = "Grabando en MP3... 🎤";
+                status.style.color = "#d9534f";
+            }).catch((e) => {
+                console.error("Error al acceder al micrófono:", e);
+                status.innerText = "Error: Permiso de micrófono denegado.";
+            });
+        });
+
+        // Detener grabación y enviar
+        stopBtn.addEventListener('click', () => {
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            status.innerText = "Convirtiendo a MP3 y enviando... ⏳";
+            status.style.color = "#f0ad4e";
+
+            // Detenemos y obtenemos el archivo procesado
+            recorder.stop().getMp3().then(([buffer, blob]) => {
+                
+                // Forzamos explícitamente el MIME type a audio/mpeg
+                const mp3Blob = new Blob(buffer, { type: 'audio/mpeg' });
+                
+                // Llamamos a la función de envío pasándole el Blob
+                sendAudioToN8n(mp3Blob);
+
+            }).catch((e) => {
+                console.error("Error al procesar el MP3:", e);
+                status.innerText = "Error al procesar el audio.";
+                status.style.color = "#d9534f";
+            });
+        });
+
+        // Función para enviar a n8n
+        async function sendAudioToN8n(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'grabacion_usuario.mp3');
+
+            try {
+                const response = await fetch(n8nWebhookUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error HTTP ${response.status}: ${errorText}`);
+                }
+
+                // Sabemos que n8n ahora siempre responderá con un JSON
+                const jsonResponse = await response.json();
+                console.log("Respuesta completa de n8n:", jsonResponse);
+                
+                // n8n ('All incoming items') devuelve un Array. Extraemos el primer elemento.
+                const data = Array.isArray(jsonResponse) ? jsonResponse[0] : jsonResponse;
+
+                // --- 1. MANEJAR LA LÓGICA DE NEGOCIO (ELIMINAR) ---
+                if (data.estado === "requiere_confirmacion") {
+                    const popupMsg = data.datos.mensaje_popup;
+                    const fila = data.datos.fila;
+                    
+                    // Aquí lanzamos una alerta (o puedes conectarlo a un modal/popup bonito en tu HTML)
+                    alert(`⚠️ CONFIRMACIÓN:\n\n${popupMsg}\n(Fila afectada: ${fila})`);
+                    
+                    status.innerText = "Esperando confirmación del usuario... ⚠️";
+                    status.style.color = "#f0ad4e";
+                } else {
+                    status.innerText = "¡Respuesta recibida correctamente! ✅";
+                    status.style.color = "#5cb85c";
+                }
+
+                // --- 2. MANEJAR LA REPRODUCCIÓN DEL AUDIO ---
+                if (data.audio_base64) {
+                    let base64String = data.audio_base64;
+                    
+                    // Le agregamos la cabecera necesaria para que el HTML lo entienda como audio MP3
+                    if (!base64String.startsWith('data:')) {
+                        base64String = `data:audio/mpeg;base64,${base64String}`;
+                    }
+                    
+                    audioResponse.src = base64String;
+                    audioResponse.play();
+                } else {
+                    console.warn("La respuesta no incluyó un archivo de audio (audio_base64 estaba vacío).");
+                }
+                
+            } catch (error) {
+                console.error("Error detallado en la comunicación con n8n:", error);
+                status.innerText = `Error de conexión: Revisa la consola (F12).`;
+                status.style.color = "#d9534f";
+            }
+        }
+    </script>
+</body>
+</html>
